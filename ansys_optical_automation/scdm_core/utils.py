@@ -4,26 +4,103 @@ import subprocess
 
 import numpy as np
 
+import os
 
-def get_scdm_install_location(version):
+import os
+
+
+def find_awp_root(version=""):
     """
-    Get the SpaceClaim installation path.
+    Finds the AWP_ROOT path based on the given version.
+
+    This function searches the environmental variables for keys containing "AWP_ROOT".
+    If a specific version is provided, it returns the path for that version.
+    If no version is provided (i.e., an empty string is passed), it returns the path for the latest version.
 
     Parameters
     ----------
-    version : int
+    version : str, optional
+        The version of AWP_ROOT to search for. If an empty string is passed,
+        the path for the latest version is returned. Default is an empty string.
+
+    Returns
+    -------
+    str
+        The path to the specified AWP_ROOT version if `version` is provided.
+        If no `version` is specified, it returns the path to the latest AWP_ROOT version.
+
+    Raises
+    ------
+    ValueError
+        If the specified `version` does not exist or if no AWP_ROOT path is found in the environment variables.
+
+    Notes
+    -----
+    The function compares the version numbers by splitting the keys containing "AWP_ROOT"
+    and checking the version number after "AWP_ROOT".
+    """
+    try:
+        if version:
+            # If version is specified, return the path for that version
+            awp_root_path = os.environ.get(f"AWP_ROOT{version}", "")
+            if not awp_root_path:
+                raise ValueError(f"AWP_ROOT path for version {version} not found in the environment variables.")
+        else:
+            # If no version is specified, find the latest version
+            last_version = "000"
+            for key in os.environ:
+                if "AWP_ROOT" in key and key.split("AWP_ROOT")[1] > last_version:
+                    last_version = key.split("AWP_ROOT")[1]
+
+            awp_root_path = os.environ.get(f"AWP_ROOT{last_version}", "")
+            if not awp_root_path:
+                raise ValueError("AWP_ROOT path for the latest version not found in the environment variables.")
+
+        return awp_root_path
+
+    except Exception as e:
+        raise ValueError(f"An error occurred while finding the AWP_ROOT path: {str(e)}")
+
+
+print(find_awp_root("242"))
+def get_scdm_install_location(version=""):
+    """
+    Get the SpaceClaim installation path.
+
+    This function retrieves the installation path for SpaceClaim based on the provided version.
+    It calls the `find_awp_root` function to obtain the AWP_ROOT path for the given version,
+    and then appends the "scdm" directory to determine the SpaceClaim installation path.
+
+    Parameters
+    ----------
+    version : str, optional
         Version of SpaceClaim in numerical format. For example, ``211`` for 2021 R1.
+        If an empty string is passed, the function will use the latest version found.
 
     Returns
     -------
     str
         Path of the SpaceClaim installation.
 
-    """
-    ansys_install_dir = os.environ["AWP_ROOT{}".format(version)]
-    scdm_install_dir = os.path.join(ansys_install_dir, "scdm")
-    return scdm_install_dir
+    Raises
+    ------
+    ValueError
+        If the AWP_ROOT path for the specified or latest version cannot be found,
+        or if there is an issue with accessing the environment variables.
 
+    Notes
+    -----
+    The `find_awp_root` function is used to retrieve the AWP_ROOT path, and the "scdm" directory
+    is appended to this path to return the full path to the SpaceClaim installation.
+    """
+    try:
+        ansys_install_dir = find_awp_root(version=version)
+        scdm_install_dir = os.path.join(ansys_install_dir, "scdm")
+        return scdm_install_dir
+    except ValueError as e:
+        raise ValueError(f"Error while getting the SpaceClaim installation path: {str(e)}")
+
+print("####",get_scdm_install_location("242"))
 
 def get_speos_core(version):
     """
